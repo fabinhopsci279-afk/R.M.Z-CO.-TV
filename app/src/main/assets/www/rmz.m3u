@@ -1,0 +1,13 @@
+#EXTM3U x-tvg-url="epg.xml"
+# R.M.Z CO. TV - lista modelo legal (streams de teste). Troque pelas suas fontes legais.
+# Como usar: abra index.html > botão URL > cole este arquivo, ou Abrir .m3u e selecione este arquivo.
+#EXTINF:-1 tvg-id="RMZ.Kids" tvg-logo="" group-title="R.M.Z",001 R.M.Z Kids - Teste
+https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8
+#EXTINF:-1 tvg-id="RMZ.Cine" tvg-logo="" group-title="R.M.Z",002 R.M.Z Cine - Tears of Steel
+https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8
+#EXTINF:-1 tvg-id="RMZ.Toons" tvg-logo="" group-title="R.M.Z",003 R.M.Z Toons - Sintel
+https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8
+#EXTINF:-1 tvg-id="Nickelodeon.br" tvg-logo="" group-title="Nickelodeon",004 Nick Bob Esponja (troque pelo seu mp4/m3u8 legal)
+https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8
+#EXTINF:-1 tvg-id="Nickelodeon.br" tvg-logo="" group-title="Nickelodeon",005 Nick Patrulha Canina (troque pelo seu mp4/m3u8 legal)
+https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8

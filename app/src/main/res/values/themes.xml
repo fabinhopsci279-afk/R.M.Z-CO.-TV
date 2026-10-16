@@ -1,0 +1,7 @@
+<resources>
+    <style name="ThemeRMZ" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/rmz_bg</item>
+        <item name="android:statusBarColor">@color/rmz_bg</item>
+        <item name="android:navigationBarColor">@color/rmz_bg</item>
+    </style>
+</resources>

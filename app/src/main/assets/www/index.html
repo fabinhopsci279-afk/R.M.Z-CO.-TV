@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>R.M.Z CO. TV</title>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mpegts.js@1.8.0/dist/mpegts.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#0b0e14;color:#fff}
+header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#141a26;border-bottom:2px solid #ff3b30;position:sticky;top:0;z-index:30;flex-wrap:wrap}
+.logo{background:#ff3b30;font-weight:900;padding:6px 12px;border-radius:8px;letter-spacing:1px}
+.relogio{margin-left:auto;font-size:18px;font-weight:700}
+.abas{display:flex;gap:6px;flex-wrap:wrap}
+.abas button{padding:8px 12px;font-size:14px}
+.abas button.on{background:#ff3b30;border-color:#ff3b30}
+main{display:grid;grid-template-columns:1fr 380px;gap:10px;padding:10px;max-width:1500px;margin:0 auto}
+@media(max-width:950px){main{grid-template-columns:1fr}}
+.video-wrap{position:relative;background:#000;border-radius:12px;overflow:hidden;aspect-ratio:16/9}
+video{width:100%;height:100%;background:#000}
+.osd-num{position:absolute;top:14px;right:16px;font-size:64px;font-weight:900;background:rgba(0,0,0,.65);padding:6px 18px;border-radius:12px;display:none;border:2px solid #ff3b30}
+.info-bar{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(0,0,0,.92));padding:34px 14px 12px;display:none}
+.info-bar.on{display:block}
+.info-bar .cnum{font-size:28px;font-weight:900;color:#ffb400}
+.info-bar .cnome{font-size:20px;font-weight:800}
+.info-bar .prog{font-size:14px;color:#ddd;margin-top:4px}
+.barra{height:6px;background:#333;border-radius:4px;margin-top:6px;overflow:hidden}
+.barra i{display:block;height:100%;background:#ff3b30;width:30%}
+.msg{position:absolute;top:14px;left:14px;max-width:85%;background:rgba(0,0,0,.85);padding:10px 12px;border-radius:10px;font-size:14px;display:none;line-height:1.5}
+.msg.on{display:block}
+.msg a{color:#4af}
+.painel{background:#141a26;border-radius:12px;padding:10px;display:flex;flex-direction:column;max-height:82vh}
+.painel h3{margin:6px 0}
+.linha{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+button{background:#222f45;color:#fff;border:1px solid #33415c;border-radius:9px;padding:10px 12px;font-size:14px;font-weight:700;cursor:pointer}
+button:hover{background:#2e3d5a}
+button.destaque{background:#ff3b30;border-color:#ff3b30}
+button.peq{padding:6px 9px;font-size:13px}
+input,select{background:#0e1320;color:#fff;border:1px solid #33415c;border-radius:8px;padding:9px;font-size:14px;max-width:100%}
+ul#canais{list-style:none;margin:8px 0 0;padding:0;overflow:auto;min-height:200px}
+ul#canais li{display:flex;align-items:center;gap:10px;padding:9px;border-radius:10px;cursor:pointer;border:1px solid transparent}
+ul#canais li.ativo{background:#1e2a44;border-color:#ff3b30}
+ul#canais li:hover{background:#1a2440}
+.num{background:#000;border:1px solid #444;color:#ffb400;font-weight:900;padding:6px 8px;border-radius:8px;min-width:52px;text-align:center;font-size:13px}
+.logo-img{width:44px;height:30px;object-fit:contain;background:#fff;border-radius:6px;flex-shrink:0}
+.fav{margin-left:auto;font-size:20px;background:none;border:none;padding:4px 8px}
+.fav.on{color:#ffcc00}
+.guia{position:fixed;inset:0;background:rgba(3,5,10,.96);z-index:50;display:none;padding:14px;overflow:auto}
+.guia.on{display:block}
+.tabela{width:100%;border-collapse:collapse;min-width:700px}
+.tabela th,.tabela td{border:1px solid #26314a;padding:10px;text-align:left;font-size:14px}
+.tabela th{background:#1c2538}
+.tabela tr.sel td{background:#2a1a1a;outline:2px solid #ff3b30}
+.now{background:#ff3b30;color:#fff;border-radius:6px;padding:2px 8px;font-size:12px;font-weight:800}
+.teclado{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.teclado button{font-size:20px;padding:14px}
+.zap{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.zap button{font-size:16px;padding:14px}
+.hint{font-size:13px;color:#9fb0cc;line-height:1.6}
+.oculto{display:none!important}
+.conta{font-size:13px;color:#9fb0cc}
+.tag{font-size:11px;background:#222f45;border:1px solid #33415c;border-radius:6px;padding:2px 6px;color:#9fb0cc}
+.tag.ts{color:#ffb400;border-color:#ffb400}
+.tag.hls{color:#4f4;border-color:#4f4}
+.tag.video{color:#4af;border-color:#4af}
+</style>
+</head>
+<body>
+<header>
+<div class="logo">R.M.Z CO. TV</div>
+<div class="abas">
+<button id="aba-tv" class="on" onclick="trocarAba('tv')">📺 TV</button>
+<button id="aba-filmes" onclick="trocarAba('filmes')">🎬 Filmes</button>
+<button id="aba-series" onclick="trocarAba('series')">📚 Séries</button>
+<button id="aba-fav" onclick="trocarAba('fav')">⭐ Favoritos <span id="favCount"></span></button>
+</div>
+<div id="status">iniciando...</div>
+<div class="relogio" id="relogio">--:--</div>
+</header>
+
+<main>
+<section>
+<div class="video-wrap">
+<video id="player" controls playsinline></video>
+<div class="osd-num" id="osdNum">001</div>
+<div class="info-bar" id="infoBar">
+<div><span class="cnum" id="infoNum">001</span> <span class="cnome" id="infoNome">—</span></div>
+<div class="prog" id="infoProg">—</div>
+<div class="barra"><i id="infoBarra"></i></div>
+</div>
+<div class="msg" id="msgBox"></div>
+</div>
+
+<div class="linha" style="margin-top:10px">
+<button class="destaque" onclick="abrirGuia()">📺 GUIA (Enter)</button>
+<button onclick="chMais()">▲ CH+ (↑)</button>
+<button onclick="chMenos()">▼ CH- (↓)</button>
+<button onclick="toggleInfo()">ℹ INFO (I)</button>
+<button onclick="telacheia()">⛶ CHEIA (F)</button>
+<button onclick="alternarFavAtual()">⭐ FAV</button>
+</div>
+<div class="linha">
+<button class="peq" onclick="abrirVLC()">▶ Abrir no VLC</button>
+<button class="peq" onclick="copiarLink()">📋 Copiar link</button>
+<button class="peq" onclick="baixarM3Ucanal()">⬇ M3U do canal</button>
+<span class="conta" id="playerTipo"></span>
+</div>
+
+<div class="painel" style="max-height:none;margin-top:10px">
+<h3>Controle remoto</h3>
+<div class="teclado">
+<button onclick="digito('1')">1</button><button onclick="digito('2')">2</button><button onclick="digito('3')">3</button>
+<button onclick="digito('4')">4</button><button onclick="digito('5')">5</button><button onclick="digito('6')">6</button>
+<button onclick="digito('7')">7</button><button onclick="digito('8')">8</button><button onclick="digito('9')">9</button>
+<button onclick="limpaDigito()">⌫</button><button onclick="digito('0')">0</button><button class="destaque" onclick="confirmaNumero()">OK</button>
+</div>
+<div class="zap">
+<button onclick="chMenos()">▼ CH-</button>
+<button onclick="chMais()">▲ CH+</button>
+</div>
+<p class="hint">Teclas: <b>↑/↓ ou PgUp/PgDn</b> troca canal · <b>0-9 + Enter</b> vai ao número · <b>Enter</b> guia · <b>Esc</b> fecha · <b>M</b> mudo · <b>F</b> cheia · <b>I</b> info.<br>
+Links <b>.ts</b> (Xtream) às vezes não tocam no navegador — use <b>Abrir no VLC</b>. Links <b>http://</b> com página em <b>https://</b> são bloqueados: abra o arquivo com duplo-clique (file://).</p>
+</div>
+</section>
+
+<aside class="painel">
+<h3>Canais <span id="total"></span></h3>
+<div class="linha">
+<input id="busca" placeholder="buscar nome, número ou grupo..." oninput="resetPag();renderLista()" style="flex:1;min-width:160px">
+</div>
+<div class="linha">
+<select id="cat" onchange="resetPag();renderLista()" style="flex:1;min-width:140px"><option value="">Todas categorias</option></select>
+<select id="fTipo" onchange="resetPag();renderLista()"><option value="">Todos tipos</option><option value="hls">.m3u8</option><option value="video">.mp4</option><option value="ts">.ts</option></select>
+</div>
+<div class="linha">
+<button class="peq" onclick="abrirM3U()">📂 Abrir .m3u/.m3u8</button>
+<button class="peq" onclick="abrirZIP()">📦 Abrir .zip</button>
+<button class="peq" onclick="carregarURL()">🔗 URL m3u</button>
+<button class="peq" onclick="abrirVideos()">🎞️ Vídeos mp4</button>
+<button class="peq" onclick="carregarPadrao()">↺ Padrão</button>
+<input type="file" id="fileM3U" accept=".m3u,.m3u8,.txt" class="oculto">
+<input type="file" id="fileZIP" accept=".zip" class="oculto">
+<input type="file" id="fileVideos" accept="video/*" multiple class="oculto">
+</div>
+<div class="conta" id="conta">—</div>
+<ul id="canais"></ul>
+<div class="linha" style="margin-top:8px">
+<button class="peq" id="btnMais" onclick="mostrarMais()">▼ Mostrar mais (<span id="restam"></span>)</button>
+</div>
+<p class="hint">Listas grandes (CanaisBR01~04, Filmes-Series, +300 mil itens): use <b>📦 Abrir .zip</b> e selecione o <b>Iptv-Brasil-2026-master.zip</b> — o app lê dentro do zip sem extrair. Depois filtre por categoria + busca.<br>
+Arquivo local <b>C:\...</b> de outro m3u só toca via <b>🎞️ Vídeos mp4</b>.</p>
+</aside>
+</main>
+
+<div class="guia" id="guia">
+<div class="linha">
+<button class="destaque" onclick="document.getElementById('guia').classList.remove('on')">✖ FECHAR (Esc)</button>
+<span id="guiaHora" style="align-self:center;font-weight:800"></span>
+</div>
+<table class="tabela"><thead><tr><th>Canal</th><th>Agora</th><th>A seguir</th><th>+1h</th></tr></thead><tbody id="guiaCorpo"></tbody></table>
+</div>
+
+<script>
+let todos=[], canais=[], idx=0, hls=null, mpegtsPlayer=null, buf="", bufTimer=null, guiaSel=0;
+let aba='tv', pagina=0; const POR_PAG=200;
+let favs=new Set();
+try{ favs=new Set(JSON.parse(localStorage.getItem('rmz_fav_v2')||'[]')); }catch(e){}
+const player=document.getElementById('player');
+const osdNum=document.getElementById('osdNum');
+const infoBar=document.getElementById('infoBar');
+
+function relogio(){const d=new Date();document.getElementById('relogio').textContent=d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}setInterval(relogio,1000);relogio();
+function msg(t,tempo=8000){const m=document.getElementById('msgBox');m.innerHTML=t;m.classList.add('on');clearTimeout(m._t);m._t=setTimeout(()=>m.classList.remove('on'),tempo);}
+function esc(s){return String(s||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+
+function tipoURL(u){
+  u=(u||'').trim();
+  if(/^https?:\/\/(www\.)?(youtube\.com|youtu\.be)/i.test(u)) return 'youtube';
+  if(/pluto\.tv/i.test(u)) return 'pagina';
+  if(/\.m3u8($|\?)/i.test(u)) return 'hls';
+  if(/\.(mp4|webm|mkv|mov)($|\?)/i.test(u)) return 'video';
+  if(/\.m3u($|\?)/i.test(u)) return 'lista';
+  if(/^blob:/i.test(u)) return 'video';
+  if(/\.ts($|\?)/i.test(u)) return 'ts';
+  if(/\/play\//i.test(u)&&/index\.m3u8/i.test(u)) return 'hls';
+  if(/:\d+\/play\//i.test(u)) return 'hls';
+  return 'auto';
+}
+function classificar(grupo,nome,url){
+  const g=(grupo||'').toLowerCase();
+  if(/xxx|adult|porn|playboy|sextreme/i.test(g)) return 'adulto';
+  if(/filme|movie|cine|vod|lan.a|drama|comedia|com.dia|acao|terror|romance|animacao|anima|4k|naciona|suspens|faroeste|guerra|aventura|document/i.test(g)) {
+    if(/serie|novela|dorama|s.rie/i.test(g)) return 'series';
+    return 'filmes';
+  }
+  if(/s.rie|serie|novela|dorama|turca|anime|desenho|toon|crunchy|disney|netflix|globoplay|max|prime|paramount|apple|star\+|doramas/i.test(g)) return 'series';
+  if(/\.(mp4|mkv)$/i.test(url||'') && /filme/i.test((nome||''))) return 'filmes';
+  return 'tv';
+}
+function getAttr(linha,at){
+  let m=linha.match(new RegExp(at+'="([^"]*)"'));
+  if(m) return m[1];
+  m=linha.match(new RegExp(at+"='([^']*)'"));
+  return m?m[1]:'';
+}
+function parseM3U(texto){
+  const linhas=texto.split(/\r?\n/);const out=[];let meta=null;
+  for(let raw of linhas){
+    const l=(raw||'').trim();if(!l)continue;
+    if(l.startsWith('#EXTM3U')||l.startsWith('#EXT-X-')||l.startsWith('#EXTVLCOPT')||l.startsWith('#EXTGRP'))continue;
+    if(l.startsWith('#EXTINF')){
+      const partes=l.split(',');
+      let nome=partes.length>1?partes.slice(1).join(',').trim():'Sem nome';
+      let grupo=getAttr(l,'group-title')||'Geral';
+      let logo=getAttr(l,'tvg-logo')||'';
+      let gid=getAttr(l,'tvg-id')||getAttr(l,'tvg-name')||'';
+      if((!nome||nome===''||/^-?\d+$/.test(nome))&&gid) nome=gid;
+      meta={nome:nome||'Sem nome',gid,logo,grupo};
+    }else if(!l.startsWith('#')){
+      if(meta){out.push({nome:meta.nome,gid:meta.gid,logo:meta.logo,grupo:meta.grupo,url:l});meta=null;}
+      else out.push({nome:l,grupo:'Geral',url:l,gid:'',logo:''});
+    }
+  }
+  const vistos=new Set();const res=[];
+  for(const c of out){
+    const u=(c.url||'').trim();if(!u||vistos.has(u))continue;vistos.add(u);
+    const t=tipoURL(u);
+    res.push({nome:(c.nome||'Sem nome').replace(/^\d+\s*[-|.]?\s*/,''),gid:c.gid||'',logo:c.logo||'',grupo:c.grupo||'Geral',url:u,tipo:t,cat:classificar(c.grupo,c.nome,u)});
+  }
+  return res;
+}
+function salvarFav(){try{localStorage.setItem('rmz_fav_v2',JSON.stringify([...favs].slice(0,5000)));}catch(e){}document.getElementById('favCount').textContent=favs.size?('('+favs.size+')'):'';}
+function ehFav(c){return favs.has(c.url);}
+function alternarFav(c){
+  if(favs.has(c.url))favs.delete(c.url);else favs.add(c.url);
+  salvarFav();renderLista();
+}
+function alternarFavAtual(){if(canais[idx])alternarFav(canais[idx]);}
+
+function trocarAba(n){
+  aba=n;pagina=0;
+  for(const a of ['tv','filmes','series','fav'])document.getElementById('aba-'+a).classList.toggle('on',a===n);
+  aplicarFiltro();
+}
+function aplicarFiltro(){
+  const q=(document.getElementById('busca').value||'').toLowerCase();
+  const cat=document.getElementById('cat').value;
+  const ft=document.getElementById('fTipo').value;
+  canais=todos.filter(c=>{
+    if(aba==='fav'&&!favs.has(c.url))return false;
+    if(aba==='tv'&&c.cat!=='tv')return false;
+    if(aba==='filmes'&&c.cat!=='filmes')return false;
+    if(aba==='series'&&c.cat!=='series')return false;
+    if(cat&&c.grupo!==cat)return false;
+    if(ft&&c.tipo!==ft){
+      if(!(ft==='hls'&&c.tipo==='auto'))return false;
+    }
+    if(q&&!(c.nome.toLowerCase().includes(q)||String(c.num).includes(q)||(c.grupo||'').toLowerCase().includes(q)))return false;
+    return true;
+  });
+  idx=0;guiaSel=0;pagina=0;
+  document.getElementById('total').textContent='('+canais.length+')';
+  renderLista();
+  if(canais.length)zap(0,true);
+}
+function resetPag(){pagina=0;}
+function mostrarMais(){pagina++;renderLista(true);}
+function preencherCats(){
+  const s=document.getElementById('cat');const atual=s.value;
+  const cats=[...new Set(todos.map(c=>c.grupo))].sort();
+  s.innerHTML='<option value="">Todas categorias ('+cats.length+')</option>'+cats.slice(0,2000).map(g=>'<option>'+esc(g)+'</option>').join('');
+  if([...s.options].some(o=>o.value===atual))s.value=atual;
+}
+function setTodos(lista,origem){
+  todos=lista.map((c,i)=>({...c,num:i+1}));
+  document.getElementById('status').textContent=origem+' — '+todos.length+' itens';
+  const nTv=todos.filter(c=>c.cat==='tv').length,nF=todos.filter(c=>c.cat==='filmes').length,nS=todos.filter(c=>c.cat==='series').length;
+  document.getElementById('aba-tv').textContent='📺 TV ('+nTv+')';
+  document.getElementById('aba-filmes').textContent='🎬 Filmes ('+nF+')';
+  document.getElementById('aba-series').textContent='📚 Séries ('+nS+')';
+  preencherCats();aplicarFiltro();
+  const econom=document.getElementById('econom');
+  if(todos.length>20000)msg('📦 Lista gigante: <b>'+todos.length+' itens</b>. Use busca + categoria para filtrar. Renderizando '+POR_PAG+' por vez para não travar.');
+}
+function renderLista(manter){
+  const ul=document.getElementById('canais');
+  if(!manter)ul.innerHTML='';
+  const fim=Math.min(canais.length,(pagina+1)*POR_PAG);
+  const ini=manter?ul.children.length:0;
+  const eco=todos.length>20000;
+  for(let i=ini;i<fim;i++){
+    const c=canais[i];
+    const li=document.createElement('li');if(i===idx)li.className='ativo';
+    const logo=(!eco&&c.logo)?'<img class="logo-img" loading="lazy" src="'+esc(c.logo)+'" onerror="this.style.display=\'none\'">':'';
+    li.innerHTML='<span class="num">'+String(c.num).padStart(3,'0')+'</span>'+logo+'<span style="min-width:0"><b>'+esc(c.nome)+'</b><br><small style="color:#9fb0cc">'+esc(c.grupo||'')+'</small> <span class="tag '+esc(c.tipo)+'">'+esc(c.tipo)+'</span></span><button class="fav '+(ehFav(c)?'on':'')+'">★</button>';
+    li.querySelector('.fav').onclick=(e)=>{e.stopPropagation();alternarFav(c);};
+    li.onclick=()=>zap(i,true);
+    ul.appendChild(li);
+  }
+  document.getElementById('conta').textContent='mostrando '+Math.min(fim,canais.length)+' de '+canais.length;
+  document.getElementById('restam').textContent=Math.max(0,canais.length-fim);
+  document.getElementById('btnMais').style.display=(fim<canais.length)?'':'none';
+  const at=ul.querySelector('li.ativo');if(at)at.scrollIntoView({block:'nearest'});
+}
+function zap(i,forcar){
+  if(!canais.length)return;
+  idx=(i+canais.length)%canais.length;
+  const c=canais[idx];
+  mostrarOSD(c);mostrarInfo(c);
+  const liPos=idx-pagina*POR_PAG;
+  if(idx>=(pagina+1)*POR_PAG||idx<pagina*POR_PAG){pagina=Math.floor(idx/POR_PAG);renderLista();}
+  else{const ul=document.getElementById('canais');[...ul.children].forEach((el,k)=>el.classList.toggle('ativo',k+pagina*POR_PAG===idx));const at=ul.querySelector('li.ativo');if(at)at.scrollIntoView({block:'nearest'});}
+  if(document.getElementById('guia').classList.contains('on'))renderGuia();
+  if(forcar!==false)tocar(c);
+}
+function mostrarOSD(c){osdNum.textContent=String(c.num).padStart(3,'0');osdNum.style.display='block';clearTimeout(osdNum._t);osdNum._t=setTimeout(()=>osdNum.style.display='none',1800);}
+function epgFake(canal){
+  const base=(canal.num||1)*37+new Date().getDate();
+  const nomes=['Desenho Animado','Filme da Tarde','Notícias R.M.Z','Show de Variedades','Série Familia','Aventura Kids','Clássicos','Esporte Show'];
+  const agora=new Date();agora.setMinutes(agora.getMinutes()-(agora.getMinutes()%30),0,0);
+  const out=[];
+  for(let k=0;k<3;k++){const h=new Date(agora.getTime()+k*30*60000);const fim=new Date(h.getTime()+30*60000);out.push({ini:h,fim,titulo:nomes[(base+k)%nomes.length]+' • '+canal.nome});}
+  return out;
+}
+function mostrarInfo(c){
+  const g=epgFake(c);const agora=new Date();
+  const pct=Math.min(100,Math.max(0,((agora-g[0].ini)/(g[0].fim-g[0].ini))*100));
+  document.getElementById('infoNum').textContent=String(c.num).padStart(3,'0');
+  document.getElementById('infoNome').textContent=c.nome;
+  document.getElementById('infoProg').textContent='AGORA: '+g[0].titulo+' ('+g[0].ini.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+')  |  A SEGUIR: '+g[1].titulo;
+  document.getElementById('infoBarra').style.width=pct+'%';
+  infoBar.classList.add('on');clearTimeout(infoBar._t);
+  infoBar._t=setTimeout(()=>{if(!player.paused)infoBar.classList.remove('on');},6000);
+}
+function toggleInfo(){infoBar.classList.toggle('on');}
+function telacheia(){const w=document.querySelector('.video-wrap');if(document.fullscreenElement)document.exitFullscreen();else w.requestFullscreen&&w.requestFullscreen();}
+function limparPlayer(){
+  if(hls){try{hls.destroy();}catch(e){}hls=null;}
+  if(mpegtsPlayer){try{mpegtsPlayer.unload();mpegtsPlayer.detachMediaElement();mpegtsPlayer.destroy();}catch(e){}mpegtsPlayer=null;}
+  try{player.pause();}catch(e){}
+  player.removeAttribute('src');try{player.load();}catch(e){}
+}
+function tocar(c){
+  limparPlayer();
+  document.getElementById('playerTipo').textContent=c.tipo+' • '+c.grupo+' • '+c.num;
+  if(location.protocol==='https:'&&/^http:\/\//i.test(c.url)){
+    msg('⚠️ Canal usa <b>http://</b> e a página está em <b>https://</b> — navegador bloqueia.<br>Abra o app com <b>duplo-clique no index.html</b> (file://) ou rode com http local.<br><b>'+esc(c.nome)+'</b>',9000);
+  }
+  if(c.tipo==='youtube'||c.tipo==='pagina'){
+    msg('⚠️ Página web, não stream direto.<br><b>'+esc(c.nome)+'</b><br><a target="_blank" href="'+esc(c.url)+'">▶ ABRIR FORA</a>',9000);return;
+  }
+  if(c.tipo==='hls'||c.tipo==='auto'){
+    if(window.Hls&&Hls.isSupported()){
+      hls=new Hls({maxBufferLength:30});
+      hls.loadSource(c.url);hls.attachMedia(player);
+      hls.on(Hls.Events.ERROR,(e,d)=>{if(d.fatal){msg('❌ Erro HLS no '+String(c.num).padStart(3,'0')+'. Tentando direto...');player.src=c.url;player.play().catch(()=>{});}});
+      player.play().catch(()=>{});
+    }else if(player.canPlayType('application/vnd.apple.mpegurl')){player.src=c.url;player.play().catch(()=>{});}
+    else{player.src=c.url;player.play().catch(()=>msg('❌ Sem suporte HLS. Use VLC.'));}
+    return;
+  }
+  if(c.tipo==='ts'){
+    if(window.mpegts&&mpegts.getFeatureList&&mpegts.getFeatureList().mseLivePlayback){
+      try{
+        mpegtsPlayer=mpegts.createPlayer({type:'mpegts',isLive:true,url:c.url});
+        mpegtsPlayer.attachMediaElement(player);mpegtsPlayer.load();mpegtsPlayer.play();
+        msg('▶ Tentando .ts via mpegts.js... Se travar, use <b>Abrir no VLC</b>.',5000);
+        return;
+      }catch(e){}
+    }
+    player.src=c.url;player.play().then(()=>{}).catch(()=>{
+      msg('⚠️ <b>.ts</b> não toca no navegador.<br><b>'+esc(c.nome)+'</b><br><button onclick="abrirVLC()">▶ Abrir no VLC</button> <button onclick="copiarLink()">📋 Copiar link</button><br><small>Xtream .ts = MPEG-TS, ideal no VLC/MPV/TV.</small>',10000);
+    });
+    return;
+  }
+  player.src=c.url;player.play().catch(()=>{msg('❌ Não tocou. Se for caminho C:\\ use 🎞️ Vídeos mp4.');});
+}
+function canalAtual(){return canais[idx];}
+function abrirVLC(){const c=canalAtual();if(!c)return;navigator.clipboard&&navigator.clipboard.writeText(c.url).catch(()=>{});window.open(c.url,'_blank');msg('📋 Link copiado. Cole no VLC: <b>Mídia → Abrir fluxo de rede</b>.<br><small>'+esc(c.url.slice(0,120))+'...</small>');}
+function copiarLink(){const c=canalAtual();if(!c)return;if(navigator.clipboard)navigator.clipboard.writeText(c.url).then(()=>msg('📋 Link copiado!')).catch(()=>msg(esc(c.url)));else msg(esc(c.url));}
+function baixarM3Ucanal(){const c=canalAtual();if(!c)return;const blob=new Blob(['#EXTM3U\n#EXTINF:-1,'+c.nome+'\n'+c.url],{type:'audio/mpegurl'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rmz-'+c.num+'.m3u';a.click();}
+function chMais(){zap(idx+1);}
+function chMenos(){zap(idx-1);}
+function digito(d){buf=(buf+d).slice(-4);osdNum.textContent=buf.padStart(3,'0');osdNum.style.display='block';clearTimeout(bufTimer);bufTimer=setTimeout(confirmaNumero,1800);}
+function limpaDigito(){buf='';osdNum.style.display='none';}
+function confirmaNumero(){if(!buf)return;const n=parseInt(buf,10);buf='';osdNum.style.display='none';const i=canais.findIndex(c=>c.num===n);if(i>=0)zap(i);else msg('Canal '+String(n).padStart(3,'0')+' não existe neste filtro.');}
+function abrirGuia(){document.getElementById('guia').classList.add('on');guiaSel=idx;renderGuia();}
+function renderGuia(){
+  const corpo=document.getElementById('guiaCorpo');corpo.innerHTML='';
+  document.getElementById('guiaHora').textContent='Guia — '+new Date().toLocaleString('pt-BR');
+  const lista=canais.slice(Math.max(0,guiaSel-30),guiaSel+70);
+  lista.forEach((c)=>{
+    const g=epgFake(c);const i=canais.indexOf(c);
+    const tr=document.createElement('tr');if(i===guiaSel)tr.className='sel';
+    tr.innerHTML='<td><span class="num">'+String(c.num).padStart(3,'0')+'</span> <b>'+esc(c.nome)+'</b><br><small>'+esc(c.grupo||'')+'</small></td>'+
+    '<td><span class="now">NO AR</span><br>'+esc(g[0].titulo)+'</td><td>'+esc(g[1].titulo)+'</td><td>'+esc(g[2].titulo)+'</td>';
+    tr.onclick=()=>{zap(i);document.getElementById('guia').classList.remove('on');};
+    corpo.appendChild(tr);
+  });
+}
+document.addEventListener('keydown',e=>{
+  if(e.key>='0'&&e.key<='9'){digito(e.key);return;}
+  switch(e.key){
+    case 'ArrowUp':e.preventDefault();if(document.getElementById('guia').classList.contains('on')){guiaSel=Math.max(0,guiaSel-1);renderGuia();}else chMais();break;
+    case 'ArrowDown':e.preventDefault();if(document.getElementById('guia').classList.contains('on')){guiaSel=Math.min(canais.length-1,guiaSel+1);renderGuia();}else chMenos();break;
+    case 'PageUp':e.preventDefault();chMais();break;
+    case 'PageDown':e.preventDefault();chMenos();break;
+    case 'Enter':if(buf){confirmaNumero();}else if(document.getElementById('guia').classList.contains('on')){zap(guiaSel);document.getElementById('guia').classList.remove('on');}else{abrirGuia();}break;
+    case 'Escape':document.getElementById('guia').classList.remove('on');limpaDigito();break;
+    case 'm':case 'M':player.muted=!player.muted;break;
+    case 'f':case 'F':telacheia();break;
+    case 'i':case 'I':toggleInfo();break;
+  }
+});
+function abrirM3U(){document.getElementById('fileM3U').click();}
+function abrirZIP(){document.getElementById('fileZIP').click();}
+function abrirVideos(){document.getElementById('fileVideos').click();}
+document.getElementById('fileM3U').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();r.onload=()=>{try{const l=parseM3U(r.result);if(!l.length){msg('Arquivo sem canais.');return;}setTodos(l,f.name);}catch(err){msg('❌ Arquivo muito grande para ler de uma vez. Use 📦 .zip');}};r.readAsText(f);
+});
+document.getElementById('fileZIP').addEventListener('change',async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{
+    msg('📦 Lendo zip... (pode demorar p/ 300 mil itens)');
+    const zip=await JSZip.loadAsync(f);
+    const nomes=Object.keys(zip.files).filter(n=>/\.m3u8?$|\.txt$/i.test(n));
+    if(!nomes.length){msg('Zip sem .m3u/.m3u8');return;}
+    let tudo=[];
+    for(const n of nomes.slice(0,10)){
+      const txt=await zip.files[n].async('string');
+      const l=parseM3U(txt);
+      tudo=tudo.concat(l);
+      if(tudo.length>120000)break;
+      document.getElementById('status').textContent='lendo '+n+' ... '+tudo.length;
+      await new Promise(r=>setTimeout(r,10));
+    }
+    if(!tudo.length){msg('Zip sem canais.');return;}
+    if(tudo.length>=120000)msg('⚠️ Limite de 120 mil itens carregados p/ não travar. Use busca/categoria. Arquivos: '+nomes.join(', ').slice(0,200));
+    setTodos(tudo,f.name+' ('+nomes.length+' listas)');
+  }catch(err){msg('❌ Erro no zip: '+esc(err.message));}
+});
+document.getElementById('fileVideos').addEventListener('change',e=>{
+  const fs=[...e.target.files];if(!fs.length)return;
+  const lista=fs.map(f=>({nome:f.name.replace(/\.[^.]+$/,''),grupo:'Meus Vídeos',url:URL.createObjectURL(f),gid:'',logo:'',tipo:'video',cat:'filmes'}));
+  setTodos(lista.map((c,i)=>({...c,num:i+1})),'pasta local ('+fs.length+')');
+});
+function carregarURL(){
+  const u=prompt('Cole o link .m3u ou .m3u8:','https://');
+  if(!u)return;
+  if(/\.m3u8($|\?)/i.test(u)&&!/\.m3u8?.*#|\.m3u$/i.test(u)){
+    fetch(u).then(r=>r.text()).then(t=>{
+      if(t.includes('#EXTM3U')&&t.includes('#EXTINF'))setTodos(parseM3U(t),'url lista');
+      else setTodos([{num:1,nome:'Stream via URL',grupo:'URL',url:u,gid:'',logo:'',tipo:'hls',cat:'tv'}],'url m3u8');
+    }).catch(()=>setTodos([{num:1,nome:'Stream via URL',grupo:'URL',url:u,gid:'',logo:'',tipo:'hls',cat:'tv'}],'url m3u8'));
+    return;
+  }
+  fetch(u).then(r=>r.text()).then(t=>{const l=parseM3U(t);if(!l.length)msg('URL sem canais.');else setTodos(l,'url');}).catch(()=>msg('❌ Não abriu (CORS). Baixe o .m3u e use 📂.'));
+}
+async function carregarPadrao(){
+  const tent=['CanaisBR05.m3u8','brazil.m3u','rmz.m3u'];
+  let tudo=[];
+  for(const a of tent){
+    try{const r=await fetch(a);if(!r.ok)continue;const t=await r.text();tudo=tudo.concat(parseM3U(t));}catch(e){}
+  }
+  if(!tudo.length){
+    tudo=[
+      {nome:'R.M.Z Teste 1',grupo:'R.M.Z',url:'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',gid:'',logo:'',tipo:'hls',cat:'tv'},
+      {nome:'R.M.Z Teste 2',grupo:'R.M.Z',url:'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8',gid:'',logo:'',tipo:'hls',cat:'tv'}
+    ];
+    setTodos(tudo.map((c,i)=>({...c,num:i+1})),'modelo embutido');
+  }else setTodos(tudo,'padrão ('+tent.join('+')+')');
+}
+document.getElementById('canais').addEventListener('scroll',e=>{
+  const el=e.target;
+  if(el.scrollTop+el.clientHeight>el.scrollHeight-800){
+    if((pagina+1)*POR_PAG<canais.length){pagina++;renderLista(true);}
+  }
+});
+salvarFav();
+carregarPadrao();
+</script>
+<div id="econom" style="display:none"></div>
+</body>
+</html>

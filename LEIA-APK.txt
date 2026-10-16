@@ -1,0 +1,48 @@
+R.M.Z CO. TV - gerar o .APK (Android / Android TV)
+==================================================
+
+POR QUE NAO TEM APK PRONTO AQUI?
+- Compilar APK precisa de Android SDK + Gradle (~2 a 4 GB livres).
+- Este PC esta com ~29 MB livres no C: e sem SDK instalado.
+- Por isso deixei o projeto pronto + compilacao automatica na nuvem (gratis).
+
+OPCAO A - GitHub Actions (recomendado, 5 min, sem instalar nada)
+1. Crie conta em github.com (gratis).
+2. Crie um repositorio novo (ex: rmz-co-tv-android), privado pode ser.
+3. Envie esta pasta para la:
+     cd C:\Users\fdasi\rmz-co-tv-android
+     git init
+     git add .
+     git commit -m "R.M.Z CO TV v2.0"
+     git branch -M main
+     git remote add origin https://github.com/SEU-USUARIO/rmz-co-tv-android.git
+     git push -u origin main
+   (ou arraste os arquivos pelo site do GitHub)
+4. No GitHub: aba Actions > workflow "Build APK" > aguarde ~3-5 min.
+5. Baixe o artefato "rmz-co-tv-apk" > app-debug.apk.
+6. Passe para o celular/TV: USB, Google Drive, Send Files to TV, etc.
+   No Android: permita "instalar apps desconhecidos" e instale.
+   Na TV Box: use gerenciador de arquivos (ex: File Commander, X-plore).
+
+OPCAO B - Android Studio (no PC, precisa liberar ~5 GB no disco)
+1. Instale Android Studio + SDK Platform 34 + Build-Tools.
+2. Abra a pasta C:\Users\fdasi\rmz-co-tv-android.
+3. Menu Build > Build APK(s) > app-debug.apk em app/build/outputs/apk/debug/.
+
+OPCAO C - Testar AGORA sem APK (TV Box / celular)
+- Copie C:\Users\fdasi\rmz-co-tv\index.html + brazil.m3u + CanaisBR05.m3u8
+  para um pendrive, abra o index.html no navegador da TV (Chrome/TV Bro).
+- Ou instale VLC na TV e abra as listas .m3u8 direto.
+
+CONTROLE NA TV (ja funciona no app):
+- Setas cima/baixo = CH+ / CH- | Enter = guia | Voltar = fecha guia
+- 0-9 + OK = numero do canal | Fullscreen pelo botao CHEIA
+
+CONTEUDO DO PROJETO:
+- app/src/main/java/co/rmz/tv/MainActivity.java ... WebView celular+TV, file picker p/ .m3u/.zip
+- app/src/main/assets/www/ ... app web embutido (index.html + listas padrao)
+- app/src/main/AndroidManifest.xml ... permissao INTERNET, cleartext http, LEANBACK_LAUNCHER (icone na home da TV)
+- .github/workflows/build-apk.yml ... compila sozinho na nuvem
+- Pacote: co.rmz.tv | versao 2.0 (versionCode 2) | minSdk 24 (Android 7+)
+
+AVISO: use apenas listas com direito de exibicao.
